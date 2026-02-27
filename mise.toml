@@ -1,11 +1,10 @@
 # mise configuration for Fullstack Azure Project
-# Python + SvelteKit + Docker + Terraform + Azure
+# Go + SvelteKit + Docker + Terraform + Azure
 
 [tools]
 
 # Backend
-python = "latest"
-uv = "latest"
+go = "latest"
 
 # Frontend
 node = "latest"
@@ -24,22 +23,20 @@ pre-commit = "latest"
 direnv = "latest"
 
 [env]
-PYTHONUNBUFFERED = "1"
-PYTHONDONTWRITEBYTECODE = "1"
-
 # Common project paths
 BACKEND_DIR = "apps/backend"
 FRONTEND_DIR = "apps/frontend"
 INFRA_DIR = "infra"
 
+# Setup tasks
 [tasks.setup]
 description = "Initial project setup"
 run = [
-  "uv venv",
-  "uv sync",
+  "cd apps/backend && go mod download",
   "cd apps/frontend && pnpm install"
 ]
 
+# Development tasks
 [tasks.dev]
 description = "Run frontend and backend in dev mode"
 run = [
@@ -48,19 +45,143 @@ run = [
 ]
 
 [tasks."dev:backend"]
-run = "cd apps/backend && uv run main.py"
+description = "Run backend locally"
+run = "cd apps/backend && go run ."
 
 [tasks."dev:frontend"]
+description = "Run frontend dev server"
 run = "cd apps/frontend && pnpm run dev"
 
+# Database tasks
+[tasks."db:up"]
+description = "Start PostgreSQL database"
+run = "docker compose up -d postgres"
+
+[tasks."db:migrate"]
+description = "Run database migrations"
+run = "docker compose up migrate"
+
+[tasks."db:migrate:create"]
+description = "Create a new migration file (usage: mise run db:migrate:create -- migration_name)"
+run = """
+#!/bin/bash
+if [ -z "$1" ]; then
+  echo "Usage: mise run db:migrate:create -- <migration_name>"
+  exit 1
+fi
+TIMESTAMP=$(date +%s)
+SEQ=$(printf "%06d" $(ls -1 apps/backend/migrations/*.up.sql 2>/dev/null | wc -l | xargs))
+touch "apps/backend/migrations/${SEQ}_$1.up.sql"
+touch "apps/backend/migrations/${SEQ}_$1.down.sql"
+echo "Created migration files:"
+echo "  apps/backend/migrations/${SEQ}_$1.up.sql"
+echo "  apps/backend/migrations/${SEQ}_$1.down.sql"
+"""
+
+[tasks."db:migrate:down"]
+description = "Rollback last migration"
+run = """
+docker compose run --rm migrate \
+  -path /migrations \
+  -database "postgres://healthcare_user:healthcare_pass@postgres:5432/healthcare?sslmode=disable" \
+  down 1
+"""
+
+[tasks."db:migrate:force"]
+description = "Force migration to specific version (usage: mise run db:migrate:force -- version)"
+run = """
+#!/bin/bash
+if [ -z "$1" ]; then
+  echo "Usage: mise run db:migrate:force -- <version>"
+  exit 1
+fi
+docker compose run --rm migrate \
+  -path /migrations \
+  -database "postgres://healthcare_user:healthcare_pass@postgres:5432/healthcare?sslmode=disable" \
+  force $1
+"""
+
+[tasks."db:psql"]
+description = "Connect to PostgreSQL database"
+run = "docker compose exec postgres psql -U healthcare_user -d healthcare"
+
+[tasks."db:down"]
+description = "Stop and remove database"
+run = "docker compose down postgres"
+
+[tasks."db:reset"]
+description = "Reset database (stop, remove volumes, start, migrate)"
+run = [
+  "docker compose down postgres -v",
+  "docker compose up -d postgres",
+  "sleep 3",
+  "docker compose up migrate"
+]
+
+# Docker Compose tasks
+[tasks."compose:up"]
+description = "Start all services with Docker Compose"
+run = "docker compose up -d"
+
+[tasks."compose:down"]
+description = "Stop all services"
+run = "docker compose down"
+
+[tasks."compose:logs"]
+description = "View logs from all services"
+run = "docker compose logs -f"
+
+[tasks."compose:logs:backend"]
+description = "View backend logs"
+run = "docker compose logs -f backend"
+
+[tasks."compose:logs:postgres"]
+description = "View PostgreSQL logs"
+run = "docker compose logs -f postgres"
+
+[tasks."compose:rebuild"]
+description = "Rebuild and restart all services"
+run = "docker compose up -d --build"
+
+[tasks."compose:ps"]
+description = "Show running containers"
+run = "docker compose ps"
+
+[tasks."compose:clean"]
+description = "Stop and remove all containers and volumes"
+run = "docker compose down -v"
+
+# Docker build tasks
 [tasks."docker:build"]
 description = "Build Docker images"
 run = "docker compose build"
 
-[tasks."docker:up"]
-description = "Start Docker services"
-run = "docker compose up"
+[tasks."docker:build:backend"]
+description = "Build backend Docker image"
+run = "cd apps/backend && docker build -t backend:latest ."
 
+[tasks."docker:tag:backend"]
+description = "Tag backend image for ACR"
+run = """
+ACR_NAME=$(cd infra && terraform output -raw acr_name 2>/dev/null || echo "acrhealthcaredev")
+docker tag backend:latest ${ACR_NAME}.azurecr.io/backend:latest
+docker tag backend:latest ${ACR_NAME}.azurecr.io/backend:$(git rev-parse --short HEAD 2>/dev/null || echo "dev")
+"""
+
+[tasks."docker:push:backend"]
+description = "Push backend image to ACR"
+run = """
+ACR_NAME=$(cd infra && terraform output -raw acr_name 2>/dev/null || echo "acrhealthcaredev")
+az acr login --name ${ACR_NAME}
+docker push ${ACR_NAME}.azurecr.io/backend:latest
+docker push ${ACR_NAME}.azurecr.io/backend:$(git rev-parse --short HEAD 2>/dev/null || echo "dev")
+"""
+
+[tasks."docker:build-push:backend"]
+description = "Build, tag, and push backend to ACR"
+depends = ["docker:build:backend", "docker:tag:backend", "docker:push:backend"]
+
+# Terraform/Terragrunt tasks
 [tasks."tf:init"]
 description = "Terraform init"
 run = "cd infra && terraform init"
@@ -70,13 +191,167 @@ description = "Terragrunt init"
 run = "cd infra && terragrunt init"
 
 [tasks."tf:plan"]
+description = "Terraform plan"
 run = "cd infra && terraform plan"
 
+[tasks."tg:plan"]
+description = "Terragrunt plan"
+run = "cd infra && terragrunt plan"
+
 [tasks."tf:apply"]
+description = "Terraform apply"
 run = "cd infra && terraform apply"
 
+[tasks."tg:apply"]
+description = "Terragrunt apply"
+run = "cd infra && terragrunt apply"
+
+[tasks."tf:destroy"]
+description = "Terraform destroy"
+run = "cd infra && terraform destroy"
+
+[tasks."tg:destroy"]
+description = "Terragrunt destroy"
+run = "cd infra && terragrunt destroy"
+
+[tasks."tf:output"]
+description = "Show Terraform outputs"
+run = "cd infra && terraform output"
+
+[tasks."tg:output"]
+description = "Show Terragrunt outputs"
+run = "cd infra && terragrunt output"
+
+# Azure tasks
 [tasks."azure:login"]
+description = "Login to Azure"
 run = "az login"
 
 [tasks."azure:whoami"]
+description = "Show current Azure account"
 run = "az account show --output table"
+
+[tasks."azure:speech:key"]
+description = "Get Azure Speech service key"
+run = "cd infra && terragrunt output -raw speech_key"
+
+[tasks."azure:speech:endpoint"]
+description = "Get Azure Speech service endpoint"
+run = "cd infra && terragrunt output speech_endpoint"
+
+# ACR tasks
+[tasks."acr:login"]
+description = "Login to Azure Container Registry"
+run = """
+ACR_NAME=$(cd infra && terraform output -raw acr_name 2>/dev/null || echo "acrhealthcaredev")
+az acr login --name ${ACR_NAME}
+"""
+
+[tasks."acr:list"]
+description = "List images in ACR"
+run = """
+ACR_NAME=$(cd infra && terraform output -raw acr_name 2>/dev/null || echo "acrhealthcaredev")
+az acr repository list --name ${ACR_NAME} --output table
+"""
+
+[tasks."acr:show:backend"]
+description = "Show backend image tags in ACR"
+run = """
+ACR_NAME=$(cd infra && terraform output -raw acr_name 2>/dev/null || echo "acrhealthcaredev")
+az acr repository show-tags --name ${ACR_NAME} --repository backend --output table
+"""
+
+# Testing tasks
+[tasks."test:backend"]
+description = "Run backend tests"
+run = "cd apps/backend && go test ./..."
+
+[tasks."test:frontend"]
+description = "Run frontend tests"
+run = "cd apps/frontend && pnpm test"
+
+[tasks.test]
+description = "Run all tests"
+depends = ["test:backend", "test:frontend"]
+
+# Linting tasks
+[tasks."lint:backend"]
+description = "Lint backend code"
+run = "cd apps/backend && go vet ./..."
+
+[tasks."lint:frontend"]
+description = "Lint frontend code"
+run = "cd apps/frontend && pnpm run lint"
+
+[tasks.lint]
+description = "Lint all code"
+depends = ["lint:backend", "lint:frontend"]
+
+# Build tasks
+[tasks."build:backend"]
+description = "Build backend binary"
+run = "cd apps/backend && go build -o bin/backend ."
+
+[tasks."build:frontend"]
+description = "Build frontend for production"
+run = "cd apps/frontend && pnpm run build"
+
+[tasks.build]
+description = "Build all projects"
+depends = ["build:backend", "build:frontend"]
+
+# Clean tasks
+[tasks."clean:backend"]
+description = "Clean backend build artifacts"
+run = "cd apps/backend && rm -rf bin/ tmp/"
+
+[tasks."clean:frontend"]
+description = "Clean frontend build artifacts"
+run = "cd apps/frontend && rm -rf .svelte-kit/ build/"
+
+[tasks."clean:docker"]
+description = "Clean Docker containers and volumes"
+run = "docker compose down -v"
+
+[tasks.clean]
+description = "Clean all build artifacts"
+depends = ["clean:backend", "clean:frontend", "clean:docker"]
+
+# Utility tasks
+[tasks.help]
+description = "Show available tasks"
+run = "mise tasks"
+
+[tasks.env]
+description = "Show environment variables"
+run = "mise env"
+
+[tasks.doctor]
+description = "Check system dependencies"
+run = """
+echo "Checking dependencies..."
+echo ""
+echo "Go version:"
+go version
+echo ""
+echo "Node version:"
+node --version
+echo ""
+echo "pnpm version:"
+pnpm --version
+echo ""
+echo "Docker version:"
+docker --version
+echo ""
+echo "Docker Compose version:"
+docker compose version
+echo ""
+echo "Terraform version:"
+terraform version
+echo ""
+echo "Azure CLI version:"
+az version --output table
+echo ""
+echo "All dependencies installed!"
+"""
+

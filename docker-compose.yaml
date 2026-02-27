@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: healthcare-postgres
+    environment:
+      POSTGRES_DB: healthcare
+      POSTGRES_USER: healthcare_user
+      POSTGRES_PASSWORD: healthcare_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U healthcare_user -d healthcare"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - healthcare-network
+
+  migrate:
+    image: migrate/migrate:latest
+    container_name: healthcare-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./apps/backend/migrations:/migrations
+    command:
+      [
+        "-path",
+        "/migrations",
+        "-database",
+        "postgres://healthcare_user:healthcare_pass@postgres:5432/healthcare?sslmode=disable",
+        "up",
+      ]
+    networks:
+      - healthcare-network
+    restart: on-failure
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: healthcare-backend
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PORT: "8080"
+      ENV: "development"
+      DATABASE_URL: "postgres://healthcare_user:healthcare_pass@postgres:5432/healthcare?sslmode=disable"
+      AZURE_SPEECH_KEY: "${AZURE_SPEECH_KEY}"
+      AZURE_SPEECH_REGION: "${AZURE_SPEECH_REGION:-swedencentral}"
+    ports:
+      - "8080:8080"
+    networks:
+      - healthcare-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  healthcare-network:
+    driver: bridge
