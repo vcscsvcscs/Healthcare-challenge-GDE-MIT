@@ -108,6 +108,65 @@
         }
       }
     },
+    "/api/v1/checkin/audio-stream": {
+      "post": {
+        "summary": "Stream audio from mobile app",
+        "description": "Stream audio for real-time transcription using WebSocket or chunked upload",
+        "operationId": "postApiV1CheckinAudioStream",
+        "tags": [
+          "Check-in"
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Session ID for the check-in"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "audio/wav": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Audio transcribed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "transcription": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/api/v1/checkin/respond": {
       "post": {
         "summary": "Submit user response",
@@ -139,6 +198,56 @@
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/checkin/question-audio/{sessionId}/{questionId}": {
+      "get": {
+        "summary": "Get question audio",
+        "description": "Get pre-generated or on-demand generated audio for a specific question",
+        "operationId": "getApiV1CheckinQuestionAudioSessionIdQuestionId",
+        "tags": [
+          "Check-in"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Session ID"
+          },
+          {
+            "name": "questionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Question ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Question audio",
+            "content": {
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
