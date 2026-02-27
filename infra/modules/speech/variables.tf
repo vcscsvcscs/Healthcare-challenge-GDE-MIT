@@ -30,20 +30,34 @@ variable "custom_subdomain_name" {
   default     = null
 }
 
-variable "network_acls" {
-  description = "Network ACLs configuration for the Speech service"
-  type = object({
-    default_action = string
-    ip_rules       = list(string)
-    subnet_id      = string
-  })
-  default = null
+variable "allowed_subnet_ids" {
+  description = "List of subnet IDs allowed to access the Speech service"
+  type        = list(string)
+  default     = null
 }
 
 variable "public_network_access_enabled" {
   description = "Whether public network access is enabled"
   type        = bool
+  default     = false
+}
+
+variable "enable_private_endpoint" {
+  description = "Enable private endpoint for the Speech service"
+  type        = bool
   default     = true
+}
+
+variable "private_endpoint_subnet_id" {
+  description = "Subnet ID for the private endpoint"
+  type        = string
+  default     = null
+}
+
+variable "vnet_id" {
+  description = "Virtual Network ID for private DNS zone link"
+  type        = string
+  default     = null
 }
 
 variable "tags" {

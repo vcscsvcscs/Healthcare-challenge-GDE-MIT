@@ -24,3 +24,13 @@ output "name" {
   description = "The name of the Speech service"
   value       = azurerm_cognitive_account.speech.name
 }
+
+output "private_endpoint_id" {
+  description = "The ID of the private endpoint"
+  value       = var.enable_private_endpoint ? azurerm_private_endpoint.speech[0].id : null
+}
+
+output "private_ip_address" {
+  description = "The private IP address of the Speech service"
+  value       = var.enable_private_endpoint ? azurerm_private_endpoint.speech[0].private_service_connection[0].private_ip_address : null
+}
