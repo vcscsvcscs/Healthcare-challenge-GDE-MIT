@@ -2,22 +2,29 @@ package main
 
 import (
 	"database/sql"
-	"os"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	"github.com/vcscsvcscs/Healthcare-challenge-GDE-MIT/apps/backend/internal/config"
 	"go.uber.org/zap"
 )
 
 var (
 	logger *zap.Logger
 	db     *sql.DB
+	cfg    *config.Config
 )
 
 func main() {
-	// Initialize Zap logger
+	// Load configuration
 	var err error
-	if os.Getenv("ENV") == "production" {
+	cfg, err = config.Load()
+	if err != nil {
+		panic("Failed to load configuration: " + err.Error())
+	}
+
+	// Initialize Zap logger
+	if cfg.Server.Environment == "production" {
 		logger, err = zap.NewProduction()
 	} else {
 		logger, err = zap.NewDevelopment()
@@ -27,17 +34,22 @@ func main() {
 	}
 	defer logger.Sync()
 
-	// Initialize database connection
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		logger.Fatal("DATABASE_URL environment variable is required")
-	}
+	logger.Info("Configuration loaded successfully",
+		zap.String("environment", cfg.Server.Environment),
+		zap.String("port", cfg.Server.Port),
+	)
 
-	db, err = sql.Open("postgres", databaseURL)
+	// Initialize database connection
+	db, err = sql.Open("postgres", cfg.Database.URL)
 	if err != nil {
 		logger.Fatal("Failed to connect to database", zap.Error(err))
 	}
 	defer db.Close()
+
+	// Configure database connection pool
+	db.SetMaxOpenConns(cfg.Database.MaxOpenConns)
+	db.SetMaxIdleConns(cfg.Database.MaxIdleConns)
+	db.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
 
 	// Test database connection
 	if err := db.Ping(); err != nil {
@@ -46,7 +58,7 @@ func main() {
 	logger.Info("Successfully connected to database")
 
 	// Set Gin mode
-	if os.Getenv("ENV") == "production" {
+	if cfg.Server.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
@@ -63,14 +75,8 @@ func main() {
 	r.GET("/api/v1/status", handleStatus)
 	r.GET("/api/v1/users", handleGetUsers)
 
-	// Get port from environment
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	logger.Info("Starting server", zap.String("port", port))
-	if err := r.Run(":" + port); err != nil {
+	logger.Info("Starting server", zap.String("port", cfg.Server.Port))
+	if err := r.Run(":" + cfg.Server.Port); err != nil {
 		logger.Fatal("Failed to start server", zap.Error(err))
 	}
 }
