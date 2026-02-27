@@ -23,6 +23,11 @@ output "private_db_subnet_ids" {
   value       = azurerm_subnet.private_db[*].id
 }
 
+output "private_endpoint_subnet_id" {
+  description = "Private endpoint subnet ID"
+  value       = azurerm_subnet.private_endpoints.id
+}
+
 output "nat_gateway_ids" {
   description = "NAT Gateway IDs"
   value       = azurerm_nat_gateway.main[*].id

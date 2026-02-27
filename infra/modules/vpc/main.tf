@@ -37,6 +37,14 @@ resource "azurerm_subnet" "private_db" {
   address_prefixes     = [var.private_db_subnet_cidrs[count.index]]
 }
 
+# Private endpoint subnet for Azure services
+resource "azurerm_subnet" "private_endpoints" {
+  name                 = "${var.name}-private-endpoints"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = [var.private_endpoint_subnet_cidr]
+}
+
 # NAT Gateway Public IPs (one per AZ)
 resource "azurerm_public_ip" "nat" {
   count = length(var.availability_zones)

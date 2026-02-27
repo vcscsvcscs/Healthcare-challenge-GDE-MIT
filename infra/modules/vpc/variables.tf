@@ -43,6 +43,12 @@ variable "private_db_subnet_cidrs" {
   default     = ["10.0.21.0/24", "10.0.22.0/24"]
 }
 
+variable "private_endpoint_subnet_cidr" {
+  description = "CIDR block for private endpoint subnet"
+  type        = string
+  default     = "10.0.30.0/24"
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
