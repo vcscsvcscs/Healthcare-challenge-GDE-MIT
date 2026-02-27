@@ -1,0 +1,1427 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Eva Health Assistant API",
+    "description": "Voice-first health data aggregation platform backend for Hungarian users. Manages conversational health check-ins, stores structured health data, and generates medical reports.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Eva Health Team"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.eva-health.com",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "System",
+      "description": "System health and status endpoints"
+    },
+    {
+      "name": "Check-in",
+      "description": "Conversational health check-in management"
+    },
+    {
+      "name": "Medications",
+      "description": "Medication tracking and adherence"
+    },
+    {
+      "name": "Health Data",
+      "description": "Health metrics tracking (menstruation, blood pressure, fitness)"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Health data aggregation and trends"
+    },
+    {
+      "name": "Reports",
+      "description": "Medical report generation and download"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check endpoint",
+        "description": "Check if the service and database are operational",
+        "operationId": "getHealth",
+        "tags": [
+          "System"
+        ],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/checkin/start": {
+      "post": {
+        "summary": "Start new check-in session",
+        "description": "Create a new conversational health check-in session and return the first question with audio",
+        "operationId": "postApiV1CheckinStart",
+        "tags": [
+          "Check-in"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/checkin/respond": {
+      "post": {
+        "summary": "Submit user response",
+        "description": "Submit transcribed user response and get next question with audio",
+        "operationId": "postApiV1CheckinRespond",
+        "tags": [
+          "Check-in"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RespondRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/checkin/status/{sessionId}": {
+      "get": {
+        "summary": "Get session status",
+        "description": "Retrieve the current status of a check-in session",
+        "operationId": "getApiV1CheckinStatusSessionId",
+        "tags": [
+          "Check-in"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionStatus"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/checkin/complete": {
+      "post": {
+        "summary": "Complete check-in session",
+        "description": "Mark session as complete and trigger data extraction",
+        "operationId": "postApiV1CheckinComplete",
+        "tags": [
+          "Check-in"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheckInResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/health/medications": {
+      "post": {
+        "summary": "Add medication",
+        "operationId": "postApiV1HealthMedications",
+        "tags": [
+          "Medications"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMedicationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Medication created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedicationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "get": {
+        "summary": "List medications",
+        "operationId": "getApiV1HealthMedications",
+        "tags": [
+          "Medications"
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Medications list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "medications": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/MedicationResponse"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health/medications/{id}": {
+      "put": {
+        "summary": "Update medication",
+        "operationId": "putApiV1HealthMedicationsId",
+        "tags": [
+          "Medications"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMedicationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Medication updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedicationResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete medication",
+        "operationId": "deleteApiV1HealthMedicationsId",
+        "tags": [
+          "Medications"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Medication deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v1/health/menstruation": {
+      "post": {
+        "summary": "Log menstruation data",
+        "operationId": "postApiV1HealthMenstruation",
+        "tags": [
+          "Health Data"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MenstruationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Menstruation data logged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MenstruationResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get menstruation history",
+        "operationId": "getApiV1HealthMenstruation",
+        "tags": [
+          "Health Data"
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Menstruation history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cycles": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/MenstruationResponse"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health/blood-pressure": {
+      "post": {
+        "summary": "Log blood pressure reading",
+        "operationId": "postApiV1HealthBloodPressure",
+        "tags": [
+          "Health Data"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BloodPressureRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Blood pressure logged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BloodPressureResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      },
+      "get": {
+        "summary": "Get blood pressure history",
+        "operationId": "getApiV1HealthBloodPressure",
+        "tags": [
+          "Health Data"
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blood pressure history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "readings": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BloodPressureResponse"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health/fitness-sync": {
+      "post": {
+        "summary": "Sync fitness data from Health Connect",
+        "operationId": "postApiV1HealthFitnessSync",
+        "tags": [
+          "Health Data"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FitnessSyncRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fitness data synced",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "synced_count": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/summary": {
+      "get": {
+        "summary": "Get dashboard summary",
+        "operationId": "getApiV1DashboardSummary",
+        "tags": [
+          "Dashboard"
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                7,
+                30,
+                90
+              ],
+              "default": 7
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/generate": {
+      "post": {
+        "summary": "Generate health report",
+        "operationId": "postApiV1ReportsGenerate",
+        "tags": [
+          "Reports"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Report generation started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/{id}": {
+      "get": {
+        "summary": "Download report",
+        "operationId": "getApiV1ReportsId",
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "VALIDATION_ERROR"
+          },
+          "message": {
+            "type": "string",
+            "example": "Invalid request data"
+          },
+          "details": {
+            "type": "string",
+            "example": "Field 'user_id' is required"
+          }
+        }
+      },
+      "HealthStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "unhealthy"
+            ]
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "connected",
+              "disconnected"
+            ]
+          }
+        }
+      },
+      "StartSessionRequest": {
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "SessionResponse": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "completed",
+              "expired"
+            ]
+          },
+          "question_text": {
+            "type": "string",
+            "description": "First question in Hungarian"
+          },
+          "question_id": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RespondRequest": {
+        "type": "object",
+        "required": [
+          "session_id",
+          "response"
+        ],
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "response": {
+            "type": "string",
+            "description": "User's transcribed response"
+          }
+        }
+      },
+      "ConversationStateResponse": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "question_text": {
+            "type": "string",
+            "description": "Next question in Hungarian"
+          },
+          "question_id": {
+            "type": "string"
+          },
+          "is_complete": {
+            "type": "boolean",
+            "description": "Whether all questions have been answered"
+          }
+        }
+      },
+      "SessionStatus": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "completed",
+              "expired"
+            ]
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "questions_answered": {
+            "type": "integer"
+          },
+          "total_questions": {
+            "type": "integer"
+          }
+        }
+      },
+      "CompleteSessionRequest": {
+        "type": "object",
+        "required": [
+          "session_id"
+        ],
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "HealthCheckInResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "check_in_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "symptoms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mood": {
+            "type": "string",
+            "enum": [
+              "positive",
+              "neutral",
+              "negative"
+            ],
+            "nullable": true
+          },
+          "pain_level": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10,
+            "nullable": true
+          },
+          "energy_level": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "nullable": true
+          },
+          "sleep_quality": {
+            "type": "string",
+            "enum": [
+              "poor",
+              "fair",
+              "good",
+              "excellent"
+            ],
+            "nullable": true
+          },
+          "medication_taken": {
+            "type": "string",
+            "enum": [
+              "yes",
+              "no",
+              "partial"
+            ],
+            "nullable": true
+          },
+          "physical_activity": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "meals": {
+            "type": "object",
+            "properties": {
+              "breakfast": {
+                "type": "string",
+                "nullable": true
+              },
+              "lunch": {
+                "type": "string",
+                "nullable": true
+              },
+              "dinner": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "general_feeling": {
+            "type": "string",
+            "nullable": true
+          },
+          "additional_notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateMedicationRequest": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "name",
+          "dosage",
+          "frequency",
+          "start_date"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "dosage": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "UpdateMedicationRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "dosage": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "MedicationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "dosage": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MenstruationRequest": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "start_date"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "flow_intensity": {
+            "type": "string",
+            "enum": [
+              "light",
+              "moderate",
+              "heavy"
+            ],
+            "nullable": true
+          },
+          "symptoms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "MenstruationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "flow_intensity": {
+            "type": "string",
+            "enum": [
+              "light",
+              "moderate",
+              "heavy"
+            ],
+            "nullable": true
+          },
+          "symptoms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BloodPressureRequest": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "systolic",
+          "diastolic",
+          "pulse"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "systolic": {
+            "type": "integer",
+            "minimum": 70,
+            "maximum": 250
+          },
+          "diastolic": {
+            "type": "integer",
+            "minimum": 40,
+            "maximum": 150
+          },
+          "pulse": {
+            "type": "integer",
+            "minimum": 30,
+            "maximum": 220
+          },
+          "measured_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BloodPressureResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "systolic": {
+            "type": "integer"
+          },
+          "diastolic": {
+            "type": "integer"
+          },
+          "pulse": {
+            "type": "integer"
+          },
+          "measured_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "FitnessSyncRequest": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "data_points"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "data_points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FitnessDataPoint"
+            }
+          }
+        }
+      },
+      "FitnessDataPoint": {
+        "type": "object",
+        "required": [
+          "date",
+          "data_type",
+          "value",
+          "unit",
+          "source",
+          "source_data_id"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "data_type": {
+            "type": "string",
+            "enum": [
+              "steps",
+              "heart_rate",
+              "sleep",
+              "calories",
+              "distance",
+              "active_minutes"
+            ]
+          },
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "count",
+              "bpm",
+              "minutes",
+              "kcal",
+              "meters"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "health_connect",
+              "google_fit"
+            ]
+          },
+          "source_data_id": {
+            "type": "string",
+            "description": "Original ID from Health Connect for deduplication"
+          }
+        }
+      },
+      "DashboardSummary": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "example": "Last 7 days"
+          },
+          "average_pain": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "mood_distribution": {
+            "type": "object",
+            "properties": {
+              "positive": {
+                "type": "integer"
+              },
+              "neutral": {
+                "type": "integer"
+              },
+              "negative": {
+                "type": "integer"
+              }
+            }
+          },
+          "energy_levels": {
+            "type": "object",
+            "properties": {
+              "low": {
+                "type": "integer"
+              },
+              "medium": {
+                "type": "integer"
+              },
+              "high": {
+                "type": "integer"
+              }
+            }
+          },
+          "check_in_count": {
+            "type": "integer"
+          },
+          "time_series_data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyMetrics"
+            }
+          }
+        }
+      },
+      "DailyMetrics": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "pain_level": {
+            "type": "integer",
+            "nullable": true
+          },
+          "mood": {
+            "type": "string",
+            "nullable": true
+          },
+          "energy_level": {
+            "type": "string",
+            "nullable": true
+          },
+          "sleep_quality": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "GenerateReportRequest": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "start_date",
+          "end_date"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ReportResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date_range_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "date_range_end": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "generating",
+              "completed",
+              "failed"
+            ]
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request - validation error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "ServiceUnavailable": {
+        "description": "Service unavailable",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}
