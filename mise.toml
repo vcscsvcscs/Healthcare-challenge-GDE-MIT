@@ -1,0 +1,82 @@
+# mise configuration for Fullstack Azure Project
+# Python + SvelteKit + Docker + Terraform + Azure
+
+[tools]
+
+# Backend
+python = "latest"
+uv = "latest"
+
+# Frontend
+node = "latest"
+pnpm = "latest"
+
+# Infrastructure
+terraform = "latest"
+terragrunt = "latest"
+azure-cli = "latest"
+
+# Containers
+podman = "latest"
+
+# Quality / Dev tooling
+pre-commit = "latest"
+direnv = "latest"
+
+[env]
+PYTHONUNBUFFERED = "1"
+PYTHONDONTWRITEBYTECODE = "1"
+
+# Common project paths
+BACKEND_DIR = "apps/backend"
+FRONTEND_DIR = "apps/frontend"
+INFRA_DIR = "infra"
+
+[tasks.setup]
+description = "Initial project setup"
+run = [
+  "uv venv",
+  "uv sync",
+  "cd apps/frontend && pnpm install"
+]
+
+[tasks.dev]
+description = "Run frontend and backend in dev mode"
+run = [
+  "mise run dev:backend &",
+  "mise run dev:frontend"
+]
+
+[tasks."dev:backend"]
+run = "cd apps/backend && uv run main.py"
+
+[tasks."dev:frontend"]
+run = "cd apps/frontend && pnpm run dev"
+
+[tasks."docker:build"]
+description = "Build Docker images"
+run = "docker compose build"
+
+[tasks."docker:up"]
+description = "Start Docker services"
+run = "docker compose up"
+
+[tasks."tf:init"]
+description = "Terraform init"
+run = "cd infra && terraform init"
+
+[tasks."tg:init"]
+description = "Terragrunt init"
+run = "cd infra && terragrunt init"
+
+[tasks."tf:plan"]
+run = "cd infra && terraform plan"
+
+[tasks."tf:apply"]
+run = "cd infra && terraform apply"
+
+[tasks."azure:login"]
+run = "az login"
+
+[tasks."azure:whoami"]
+run = "az account show --output table"
