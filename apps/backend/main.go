@@ -1,13 +1,18 @@
 package main
 
 import (
+	"database/sql"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
-var logger *zap.Logger
+var (
+	logger *zap.Logger
+	db     *sql.DB
+)
 
 func main() {
 	// Initialize Zap logger
@@ -21,6 +26,24 @@ func main() {
 		panic(err)
 	}
 	defer logger.Sync()
+
+	// Initialize database connection
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		logger.Fatal("DATABASE_URL environment variable is required")
+	}
+
+	db, err = sql.Open("postgres", databaseURL)
+	if err != nil {
+		logger.Fatal("Failed to connect to database", zap.Error(err))
+	}
+	defer db.Close()
+
+	// Test database connection
+	if err := db.Ping(); err != nil {
+		logger.Fatal("Failed to ping database", zap.Error(err))
+	}
+	logger.Info("Successfully connected to database")
 
 	// Set Gin mode
 	if os.Getenv("ENV") == "production" {
@@ -38,6 +61,7 @@ func main() {
 	r.GET("/", handleRoot)
 	r.GET("/health", handleHealth)
 	r.GET("/api/v1/status", handleStatus)
+	r.GET("/api/v1/users", handleGetUsers)
 
 	// Get port from environment
 	port := os.Getenv("PORT")
@@ -59,8 +83,18 @@ func handleRoot(c *gin.Context) {
 }
 
 func handleHealth(c *gin.Context) {
+	// Check database connection
+	if err := db.Ping(); err != nil {
+		c.JSON(503, gin.H{
+			"status":   "unhealthy",
+			"database": "disconnected",
+		})
+		return
+	}
+
 	c.JSON(200, gin.H{
-		"status": "healthy",
+		"status":   "healthy",
+		"database": "connected",
 	})
 }
 
@@ -69,6 +103,38 @@ func handleStatus(c *gin.Context) {
 		"status":  "ok",
 		"service": "healthcare-backend",
 		"version": "1.0.0",
+	})
+}
+
+func handleGetUsers(c *gin.Context) {
+	rows, err := db.Query("SELECT id, email, name, created_at FROM users ORDER BY created_at DESC LIMIT 10")
+	if err != nil {
+		logger.Error("Failed to query users", zap.Error(err))
+		c.JSON(500, gin.H{"error": "Failed to fetch users"})
+		return
+	}
+	defer rows.Close()
+
+	type User struct {
+		ID        int    `json:"id"`
+		Email     string `json:"email"`
+		Name      string `json:"name"`
+		CreatedAt string `json:"created_at"`
+	}
+
+	users := []User{}
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.CreatedAt); err != nil {
+			logger.Error("Failed to scan user", zap.Error(err))
+			continue
+		}
+		users = append(users, u)
+	}
+
+	c.JSON(200, gin.H{
+		"users": users,
+		"count": len(users),
 	})
 }
 
