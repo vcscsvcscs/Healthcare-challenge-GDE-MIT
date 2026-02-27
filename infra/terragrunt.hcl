@@ -3,11 +3,21 @@
 
 terraform {
   source = "."
+  
+  # Configure backend from backend.tfvars file (only for init)
+  extra_arguments "backend" {
+    commands = [
+      "init"
+    ]
+    
+    arguments = [
+      "-backend-config=backend.tfvars"
+    ]
+  }
 }
 
-# inputs = {}
-# Add inputs when you have variables to pass, e.g.:
-# inputs = {
-#   environment = "dev"
-#   location     = "eastus"
-# }
+inputs = {
+  environment         = get_env("ENVIRONMENT", "dev")
+  location            = "swedencentral"
+  resource_group_name = "Solo-1"
+}

@@ -1,0 +1,13 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!backend.tfvars.example
+
+# Terragrunt
+.terragrunt-cache/
+
+# Local files
+.env
