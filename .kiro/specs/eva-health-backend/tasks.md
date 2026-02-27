@@ -34,7 +34,7 @@ Fulfilled: 21:37:52.214 STDOUT terraform: Releasing state lock. This may take a 
 
 ## Tasks
 
-- [-] 1. Project setup and OpenAPI specification
+- [ ] 1. Project setup and OpenAPI specification
   - Review existing Go module and update to Go 1.26 if needed
   - Create project structure: internal/, pkg/, integration-tests/ folders in apps/backend/
   - Create /api folder in project root
