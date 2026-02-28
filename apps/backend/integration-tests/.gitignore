@@ -1,0 +1,9 @@
+# Test artifacts
+*.test
+*.out
+coverage.txt
+coverage.html
+
+# Test databases
+*.db
+*.sqlite

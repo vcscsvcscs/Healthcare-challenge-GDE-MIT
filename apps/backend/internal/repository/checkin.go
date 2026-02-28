@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -55,6 +56,7 @@ func (r *CheckInRepository) GetSession(ctx context.Context, sessionID string) (*
 	`
 
 	var session model.Session
+	var createdAt, updatedAt time.Time
 	err := r.db.QueryRow(ctx, query, sessionID).Scan(
 		&session.ID,
 		&session.UserID,
@@ -62,6 +64,8 @@ func (r *CheckInRepository) GetSession(ctx context.Context, sessionID string) (*
 		&session.CompletedAt,
 		&session.ExpiredAt,
 		&session.Status,
+		&createdAt,
+		&updatedAt,
 	)
 
 	if err != nil {

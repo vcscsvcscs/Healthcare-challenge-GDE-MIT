@@ -1,0 +1,127 @@
+# Eva Health Backend - mise configuration
+# https://mise.jdx.dev/
+
+[tools]
+go = "1.26"
+postgres = "15"
+
+[env]
+# Database configuration for local development
+DATABASE_URL = "postgres://postgres:postgres@localhost:5432/eva_health_dev?sslmode=disable"
+TEST_DATABASE_URL = "postgres://postgres:postgres@localhost:5432/eva_health_test?sslmode=disable"
+
+# Azure configuration (override with .env or environment variables)
+_.file = ".env"
+
+[tasks.install]
+description = "Install Go dependencies and tools"
+run = """
+go mod download
+go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+"""
+
+[tasks.test]
+description = "Run unit tests"
+run = "go test -short ./..."
+
+[tasks.test-verbose]
+description = "Run unit tests with verbose output"
+run = "go test -v -short ./..."
+
+[tasks.test-coverage]
+description = "Run unit tests with coverage"
+run = """
+go test -short -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out -o coverage.html
+echo "Coverage report generated: coverage.html"
+"""
+
+[tasks.test-integration]
+description = "Run integration tests with mock Azure services"
+depends = ["db-up", "migrate-up"]
+env = { TEST_DATABASE_URL = "postgres://postgres:postgres@localhost:5432/eva_health_test?sslmode=disable" }
+run = "go test -v ./integration-tests/..."
+
+[tasks.test-integration-real]
+description = "Run integration tests with real Azure services"
+depends = ["db-up", "migrate-up"]
+env = { TEST_DATABASE_URL = "postgres://postgres:postgres@localhost:5432/eva_health_test?sslmode=disable" }
+run = "USE_REAL_AZURE=true go test -v ./integration-tests/..."
+
+[tasks.db-up]
+description = "Start PostgreSQL test database container"
+run = """
+docker run -d \
+  --name eva-health-test-db \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=eva_health_test \
+  -p 5432:5432 \
+  postgres:15 2>/dev/null || echo "Database already running"
+sleep 3
+"""
+
+[tasks.db-down]
+description = "Stop PostgreSQL test database container"
+run = """
+docker stop eva-health-test-db 2>/dev/null || true
+docker rm eva-health-test-db 2>/dev/null || true
+"""
+
+[tasks.db-reset]
+description = "Reset test database (stop, remove, start, migrate)"
+depends = ["db-down", "db-up", "migrate-up"]
+
+[tasks.migrate-up]
+description = "Run database migrations"
+run = "migrate -path migrations -database \"$TEST_DATABASE_URL\" up"
+
+[tasks.migrate-down]
+description = "Rollback database migrations"
+run = "migrate -path migrations -database \"$TEST_DATABASE_URL\" down"
+
+[tasks.migrate-create]
+description = "Create a new migration (usage: mise run migrate-create -- migration_name)"
+run = "migrate create -ext sql -dir migrations -seq \"$@\""
+
+[tasks.dev]
+description = "Run development server"
+run = "go run main.go"
+
+[tasks.build]
+description = "Build the application"
+run = "go build -o bin/eva-health-backend main.go"
+
+[tasks.lint]
+description = "Run linters"
+run = """
+go fmt ./...
+go vet ./...
+"""
+
+[tasks.generate]
+description = "Generate code from OpenAPI spec"
+run = """
+cd pkg/api
+go generate
+"""
+
+[tasks.clean]
+description = "Clean build artifacts and test databases"
+depends = ["db-down"]
+run = """
+rm -rf bin/
+rm -f coverage.out coverage.html
+go clean -testcache
+"""
+
+[tasks.azure-test]
+description = "Test Azure client connections"
+run = "go run cmd/test-azure-clients/main.go"
+
+[tasks.docker-build]
+description = "Build Docker image"
+run = "docker build -t eva-health-backend:latest ."
+
+[tasks.help]
+description = "Show available tasks"
+run = "mise tasks"

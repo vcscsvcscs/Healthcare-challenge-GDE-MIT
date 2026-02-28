@@ -1,0 +1,33 @@
+-- Rollback check-in related tables
+
+DROP INDEX IF EXISTS idx_reports_status;
+DROP INDEX IF EXISTS idx_reports_user_id;
+DROP INDEX IF EXISTS idx_fitness_data_source_data_id;
+DROP INDEX IF EXISTS idx_fitness_data_date;
+DROP INDEX IF EXISTS idx_fitness_data_user_id;
+DROP INDEX IF EXISTS idx_blood_pressure_readings_measured_at;
+DROP INDEX IF EXISTS idx_blood_pressure_readings_user_id;
+DROP INDEX IF EXISTS idx_menstruation_cycles_start_date;
+DROP INDEX IF EXISTS idx_menstruation_cycles_user_id;
+DROP INDEX IF EXISTS idx_medication_logs_user_id;
+DROP INDEX IF EXISTS idx_medication_logs_medication_id;
+DROP INDEX IF EXISTS idx_medications_active;
+DROP INDEX IF EXISTS idx_medications_user_id;
+DROP INDEX IF EXISTS idx_health_check_ins_date;
+DROP INDEX IF EXISTS idx_health_check_ins_user_id;
+DROP INDEX IF EXISTS idx_audio_recordings_message_id;
+DROP INDEX IF EXISTS idx_audio_recordings_session_id;
+DROP INDEX IF EXISTS idx_conversation_messages_session_id;
+DROP INDEX IF EXISTS idx_check_in_sessions_status;
+DROP INDEX IF EXISTS idx_check_in_sessions_user_id;
+
+DROP TABLE IF EXISTS reports;
+DROP TABLE IF EXISTS fitness_data;
+DROP TABLE IF EXISTS blood_pressure_readings;
+DROP TABLE IF EXISTS menstruation_cycles;
+DROP TABLE IF EXISTS medication_logs;
+DROP TABLE IF EXISTS medications;
+DROP TABLE IF EXISTS health_check_ins;
+DROP TABLE IF EXISTS audio_recordings;
+DROP TABLE IF EXISTS conversation_messages;
+DROP TABLE IF EXISTS check_in_sessions;

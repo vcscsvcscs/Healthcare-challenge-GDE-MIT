@@ -18,7 +18,7 @@ type ReportService struct {
 	dashboardRepo  *repository.DashboardRepository
 	healthRepo     *repository.HealthDataRepository
 	medicationRepo *repository.MedicationRepository
-	blobClient     *azure.BlobStorageClient
+	blobClient     azure.BlobStorage
 	pdfGen         *pdf.PDFGenerator
 	logger         *zap.Logger
 }
@@ -28,7 +28,7 @@ func NewReportService(
 	dashboardRepo *repository.DashboardRepository,
 	healthRepo *repository.HealthDataRepository,
 	medicationRepo *repository.MedicationRepository,
-	blobClient *azure.BlobStorageClient,
+	blobClient azure.BlobStorage,
 	pdfGen *pdf.PDFGenerator,
 	logger *zap.Logger,
 ) *ReportService {

@@ -241,10 +241,12 @@ func (r *DashboardRepository) GetDailyMetrics(ctx context.Context, userID string
 func (r *DashboardRepository) SaveReport(ctx context.Context, report *model.Report) error {
 	query := `
 		INSERT INTO reports (
-			id, user_id, date_range_start, date_range_end,
-			file_path, generated_at, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+			id, user_id, start_date, end_date,
+			file_path, status, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 	`
+
+	status := "completed" // Default status for generated reports
 
 	_, err := r.db.Exec(ctx, query,
 		report.ID,
@@ -252,7 +254,7 @@ func (r *DashboardRepository) SaveReport(ctx context.Context, report *model.Repo
 		report.DateRangeStart,
 		report.DateRangeEnd,
 		report.FilePath,
-		report.GeneratedAt,
+		status,
 	)
 
 	if err != nil {
@@ -271,8 +273,8 @@ func (r *DashboardRepository) SaveReport(ctx context.Context, report *model.Repo
 func (r *DashboardRepository) GetReportByID(ctx context.Context, reportID string) (*model.Report, error) {
 	query := `
 		SELECT 
-			id, user_id, date_range_start, date_range_end,
-			file_path, generated_at, created_at
+			id, user_id, start_date, end_date,
+			file_path, created_at
 		FROM reports
 		WHERE id = $1
 	`
@@ -284,7 +286,6 @@ func (r *DashboardRepository) GetReportByID(ctx context.Context, reportID string
 		&report.DateRangeStart,
 		&report.DateRangeEnd,
 		&report.FilePath,
-		&report.GeneratedAt,
 		&report.CreatedAt,
 	)
 
@@ -293,6 +294,9 @@ func (r *DashboardRepository) GetReportByID(ctx context.Context, reportID string
 		return nil, fmt.Errorf("failed to get report: %w", err)
 	}
 
+	// Set GeneratedAt to CreatedAt for compatibility
+	report.GeneratedAt = report.CreatedAt
+
 	return &report, nil
 }
 
@@ -300,11 +304,11 @@ func (r *DashboardRepository) GetReportByID(ctx context.Context, reportID string
 func (r *DashboardRepository) GetReportsByUserID(ctx context.Context, userID string) ([]model.Report, error) {
 	query := `
 		SELECT 
-			id, user_id, date_range_start, date_range_end,
-			file_path, generated_at, created_at
+			id, user_id, start_date, end_date,
+			file_path, created_at
 		FROM reports
 		WHERE user_id = $1
-		ORDER BY generated_at DESC
+		ORDER BY created_at DESC
 	`
 
 	rows, err := r.db.Query(ctx, query, userID)
@@ -323,13 +327,14 @@ func (r *DashboardRepository) GetReportsByUserID(ctx context.Context, userID str
 			&report.DateRangeStart,
 			&report.DateRangeEnd,
 			&report.FilePath,
-			&report.GeneratedAt,
 			&report.CreatedAt,
 		)
 		if err != nil {
 			r.logger.Error("failed to scan report", zap.Error(err))
 			continue
 		}
+		// Set GeneratedAt to CreatedAt for compatibility
+		report.GeneratedAt = report.CreatedAt
 		reports = append(reports, report)
 	}
 

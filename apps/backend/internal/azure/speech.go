@@ -41,6 +41,12 @@ func NewSpeechServiceClient(subscriptionKey, region string, logger *zap.Logger) 
 	}, nil
 }
 
+// SetEndpointForTesting allows overriding the endpoint for testing purposes
+func (c *SpeechServiceClient) SetEndpointForTesting(endpoint string) {
+	c.endpoint = endpoint
+	c.ttsEndpoint = endpoint
+}
+
 // StreamAudioToText performs real-time speech-to-text transcription from an audio stream
 // Note: This implementation uses the REST API for simplicity. For production streaming,
 // consider using WebSocket-based streaming or the native SDK with proper C library setup.
