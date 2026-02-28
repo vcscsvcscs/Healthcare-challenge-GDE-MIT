@@ -142,10 +142,37 @@ func RequestIDMiddleware() gin.HandlerFunc {
 	}
 }
 
+// TracingMiddleware adds distributed tracing support with trace IDs
+// Validates: Requirements 12.1
+func TracingMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Check if trace ID is already set in header
+		traceID := c.GetHeader("X-Trace-ID")
+		if traceID == "" {
+			// Generate new trace ID
+			traceID = generateTraceID()
+		}
+
+		// Store in context
+		c.Set("trace_id", traceID)
+
+		// Add to response header
+		c.Header("X-Trace-ID", traceID)
+
+		c.Next()
+	}
+}
+
 // generateRequestID generates a unique request ID
 func generateRequestID() string {
 	// Simple implementation - in production, use UUID or similar
 	return time.Now().Format("20060102150405.000000")
+}
+
+// generateTraceID generates a unique trace ID for distributed tracing
+func generateTraceID() string {
+	// Simple implementation - in production, use UUID or similar
+	return "trace-" + time.Now().Format("20060102150405.000000")
 }
 
 // SlowQueryLoggingMiddleware logs database queries that exceed a threshold
