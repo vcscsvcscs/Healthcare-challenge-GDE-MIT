@@ -34,7 +34,7 @@ Fulfilled: 21:37:52.214 STDOUT terraform: Releasing state lock. This may take a 
 
 ## Tasks
 
-- [ ] 1. Project setup and OpenAPI specification
+- [x] 1. Project setup and OpenAPI specification
   - Review existing Go module and update to Go 1.26 if needed
   - Create project structure: internal/, pkg/, integration-tests/ folders in apps/backend/
   - Create /api folder in project root
@@ -58,13 +58,13 @@ Fulfilled: 21:37:52.214 STDOUT terraform: Releasing state lock. This may take a 
     - Run migrations in test environment
     - _Requirements: Testing infrastructure_
 
-- [ ] 3. Core domain models and repository layer
-  - [ ] 3.1 Define domain models in pkg/model
+- [x] 3. Core domain models and repository layer
+  - [x] 3.1 Define domain models in pkg/model
     - Create all Go structs (User, Session, Message, HealthCheckIn, Medication, etc.)
     - Add JSON tags for API serialization
     - _Requirements: 1.1, 1.6, 3.2-3.10, 4.1, 5.1, 6.1_
   
-  - [ ] 3.2 Implement repository layer with pgx
+  - [x] 3.2 Implement repository layer with pgx
     - Create CheckInRepository with CRUD operations
     - Create MedicationRepository with CRUD operations
     - Create HealthDataRepository for menstruation, blood pressure, fitness data
@@ -72,36 +72,36 @@ Fulfilled: 21:37:52.214 STDOUT terraform: Releasing state lock. This may take a 
     - Implement proper error handling and context support
     - _Requirements: 1.1, 1.3, 1.6, 4.1-4.6, 5.1-5.5, 6.1-6.5_
   
-  - [ ]* 3.3 Write property tests for repository layer
+  - [x] 3.3 Write property tests for repository layer
     - **Property 1: Session Creation Generates Unique IDs**
     - **Property 10: Medication CRUD Preserves ID**
     - **Property 11: Medication Deletion Removes Record**
     - **Property 13: List Sorting Consistency**
     - _Requirements: 1.1, 4.2, 4.3, 4.4, 5.2, 6.5_
 
-- [ ] 4. Azure service clients
-  - [ ] 4.1 Implement Azure OpenAI client
+- [x] 4. Azure service clients
+  - [x] 4.1 Implement Azure OpenAI client
     - Create OpenAIClient wrapper around Azure SDK
     - Implement Complete() method for chat completions
     - Add retry logic with exponential backoff
     - Add logging for token usage and processing time
     - _Requirements: 3.1, 12.3_
   
-  - [ ] 4.2 Implement Azure Speech Service client
+  - [x] 4.2 Implement Azure Speech Service client
     - Create SpeechServiceClient for speech-to-text
     - Implement StreamAudioToText() for real-time transcription
     - Implement TextToSpeech() for Hungarian voice synthesis
     - Configure Hungarian language (hu-HU) and voice (NoemiNeural)
     - _Requirements: 1.2, 2.2_
   
-  - [ ] 4.3 Implement Azure Blob Storage client
+  - [x] 4.3 Implement Azure Blob Storage client
     - Create BlobStorageClient wrapper
     - Implement UploadPDF() and DownloadPDF()
     - Implement UploadAudio() and DownloadAudio()
     - Add error handling for storage operations
     - _Requirements: 8.3, 8.4_
   
-  - [ ]* 4.4 Write unit tests for Azure clients
+  - [x] 4.4 Write unit tests for Azure clients
     - Mock Azure SDK responses
     - Test error handling and retries
     - Test audio streaming
@@ -110,21 +110,21 @@ Fulfilled: 21:37:52.214 STDOUT terraform: Releasing state lock. This may take a 
 - [ ] 5. Checkpoint - Verify infrastructure
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. Conversation management service
-  - [ ] 6.1 Implement QuestionFlow
+- [x] 6. Conversation management service
+  - [x] 6.1 Implement QuestionFlow
     - Define Hungarian question set (8 questions)
     - Implement GetNextQuestion() and IsComplete()
     - Add question type validation
     - _Requirements: 2.1, 2.2, 2.4_
   
-  - [ ] 6.2 Implement DataExtractor
+  - [x] 6.2 Implement DataExtractor
     - Create AI prompt template for data extraction
     - Implement Extract() method using Azure OpenAI
     - Parse JSON response into ExtractedData struct
     - Handle extraction failures gracefully
     - _Requirements: 3.1-3.12_
   
-  - [ ] 6.3 Implement CheckInService
+  - [x] 6.3 Implement CheckInService
     - Implement StartSession() with audio generation
     - Implement StreamAudioToSpeech() for real-time transcription
     - Implement ProcessResponse() with conversation state management
@@ -134,7 +134,7 @@ Fulfilled: 21:37:52.214 STDOUT terraform: Releasing state lock. This may take a 
     - Add session timeout logic (30 minutes)
     - _Requirements: 1.1-1.7, 2.1-2.6, 3.1-3.12_
   
-  - [ ]* 6.4 Write property tests for conversation flow
+  - [x] 6.4 Write property tests for conversation flow
     - **Property 2: Session Creation Returns First Question**
     - **Property 3: Response Storage and Progression**
     - **Property 4: Session Completion After All Questions**
@@ -145,14 +145,14 @@ Fulfilled: 21:37:52.214 STDOUT terraform: Releasing state lock. This may take a 
     - **Property 9: AI Failure Fallback**
     - _Requirements: 1.1-1.7, 2.1-2.6, 3.1-3.12_
 
-- [ ] 7. Health data management services
-  - [ ] 7.1 Implement MedicationService
+- [x] 7. Health data management services
+  - [x] 7.1 Implement MedicationService
     - Implement AddMedication(), ListMedications(), UpdateMedication(), DeleteMedication()
     - Add medication adherence logging
     - Handle inactive medications (past end date)
     - _Requirements: 4.1-4.6_
   
-  - [ ] 7.2 Implement HealthDataService
+  - [x] 7.2 Implement HealthDataService
     - Implement LogMenstruation() and GetMenstruationHistory()
     - Implement LogBloodPressure() and GetBloodPressureHistory()
     - Implement SyncFitnessData() with deduplication
@@ -160,35 +160,35 @@ Fulfilled: 21:37:52.214 STDOUT terraform: Releasing state lock. This may take a 
     - Add input validation for all health metrics
     - _Requirements: 5.1-5.5, 6.1-6.5_
   
-  - [ ]* 7.3 Write property tests for health data services
+  - [x] 7.3 Write property tests for health data services
     - **Property 12: Inactive Medication Retention**
     - **Property 14: Input Validation Rejects Invalid Ranges**
     - **Property 15: Enum Validation**
     - _Requirements: 4.5, 5.3, 6.2-6.4_
 
-- [ ] 8. Dashboard and reporting services
-  - [ ] 8.1 Implement DashboardService
+- [x] 8. Dashboard and reporting services
+  - [x] 8.1 Implement DashboardService
     - Implement GetSummary() with time range filtering
     - Implement GetTrends() with aggregations (average pain, mood distribution, energy levels)
     - Implement time-series data grouping by date
     - Handle empty datasets gracefully
     - _Requirements: 7.1-7.5_
   
-  - [ ] 8.2 Implement PDF generation
+  - [x] 8.2 Implement PDF generation
     - Create PDFGenerator using go-pdf/fpdf
     - Implement Generate() with all report sections
     - Format report professionally for medical use
     - Include charts/graphs for trends
     - _Requirements: 8.1, 8.2, 8.5_
   
-  - [ ] 8.3 Implement ReportService
+  - [x] 8.3 Implement ReportService
     - Implement GenerateReport() asynchronously
     - Implement GetReport() for PDF download
     - Store reports in Azure Blob Storage
     - Create report records in database
     - _Requirements: 8.1-8.6_
   
-  - [ ]* 8.4 Write property tests for dashboard and reports
+  - [x] 8.4 Write property tests for dashboard and reports
     - **Property 16: Dashboard Time Range Filtering**
     - **Property 17: Dashboard Aggregation Accuracy**
     - **Property 18: Time Series Data Grouping**
@@ -199,8 +199,8 @@ Fulfilled: 21:37:52.214 STDOUT terraform: Releasing state lock. This may take a 
 - [ ] 9. Checkpoint - Verify business logic
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 10. API handlers implementation
-  - [ ] 10.1 Implement CheckInHandler
+- [x] 10. API handlers implementation
+  - [x] 10.1 Implement CheckInHandler
     - Implement PostApiV1CheckinStart()
     - Implement PostApiV1CheckinAudioStream() with WebSocket support
     - Implement PostApiV1CheckinRespond()
@@ -210,34 +210,34 @@ Fulfilled: 21:37:52.214 STDOUT terraform: Releasing state lock. This may take a 
     - Add request validation and error handling
     - _Requirements: 1.1-1.7, 2.1-2.6, 11.1-11.6_
   
-  - [ ] 10.2 Implement MedicationHandler
+  - [x] 10.2 Implement MedicationHandler
     - Implement POST, GET, PUT, DELETE endpoints
     - Add request validation
     - _Requirements: 4.1-4.6, 11.1-11.6_
   
-  - [ ] 10.3 Implement HealthHandler
+  - [x] 10.3 Implement HealthHandler
     - Implement menstruation endpoints
     - Implement blood pressure endpoints
     - Implement fitness sync endpoint
     - Add input validation for all health metrics
     - _Requirements: 5.1-5.5, 6.1-6.5, 11.1-11.6_
   
-  - [ ] 10.4 Implement DashboardHandler
+  - [x] 10.4 Implement DashboardHandler
     - Implement GetSummary() and GetTrends()
     - Add time range parameter handling
     - _Requirements: 7.1-7.5, 11.1-11.6_
   
-  - [ ] 10.5 Implement ReportHandler
+  - [x] 10.5 Implement ReportHandler
     - Implement GenerateReport() and GetReport()
     - Handle async report generation
     - _Requirements: 8.1-8.6, 11.1-11.6_
   
-  - [ ]* 10.6 Write property tests for error handling
+  - [x] 10.6 Write property tests for error handling
     - **Property 24: Error Response Structure**
     - **Property 25: Request Validation Completeness**
     - _Requirements: 11.1-11.6_
 
-- [ ] 11. Logging, monitoring, and security
+- [-] 11. Logging, monitoring, and security
   - [ ] 11.1 Implement structured logging with zap
     - Set up zap logger with JSON output
     - Add request logging middleware
