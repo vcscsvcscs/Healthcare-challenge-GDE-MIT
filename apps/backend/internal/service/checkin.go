@@ -407,9 +407,19 @@ func (s *CheckInService) CompleteSession(ctx context.Context, sessionID string) 
 		s.logger.Error("failed to update session status", zap.Error(err))
 	}
 
+	// Calculate session duration and message count
+	sessionDuration := now.Sub(session.StartedAt)
+	messageCount := len(messages)
+
+	// Log session completion with metrics
+	// Validates: Requirements 12.4
 	s.logger.Info("check-in session completed successfully",
 		zap.String("session_id", sessionID),
 		zap.String("check_in_id", checkIn.ID),
+		zap.Duration("session_duration", sessionDuration),
+		zap.Int("message_exchanges", messageCount),
+		zap.Time("started_at", session.StartedAt),
+		zap.Time("completed_at", now),
 	)
 
 	return checkIn, nil

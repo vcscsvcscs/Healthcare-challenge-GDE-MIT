@@ -2,10 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 	"github.com/vcscsvcscs/Healthcare-challenge-GDE-MIT/apps/backend/internal/config"
+	"github.com/vcscsvcscs/Healthcare-challenge-GDE-MIT/apps/backend/internal/middleware"
 	"go.uber.org/zap"
 )
 
@@ -66,8 +68,11 @@ func main() {
 	r := gin.New()
 
 	// Middleware
-	r.Use(ginZapLogger(logger))
-	r.Use(gin.Recovery())
+	r.Use(middleware.RequestIDMiddleware())
+	r.Use(middleware.RequestLoggingMiddleware(logger))
+	r.Use(middleware.ErrorLoggingMiddleware(logger))
+	r.Use(middleware.RecoveryMiddleware(logger))
+	r.Use(middleware.SlowQueryLoggingMiddleware(logger, 1*time.Second))
 
 	// Routes
 	r.GET("/", handleRoot)
@@ -142,21 +147,4 @@ func handleGetUsers(c *gin.Context) {
 		"users": users,
 		"count": len(users),
 	})
-}
-
-// ginZapLogger returns a gin.HandlerFunc middleware that logs requests using Zap
-func ginZapLogger(logger *zap.Logger) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Process request
-		c.Next()
-
-		// Log request details
-		logger.Info("Request",
-			zap.String("method", c.Request.Method),
-			zap.String("path", c.Request.URL.Path),
-			zap.Int("status", c.Writer.Status()),
-			zap.String("ip", c.ClientIP()),
-			zap.String("user-agent", c.Request.UserAgent()),
-		)
-	}
 }
